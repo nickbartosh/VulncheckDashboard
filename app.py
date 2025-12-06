@@ -110,8 +110,12 @@ def init_database():
             asset_id INTEGER,
             severity TEXT,
             cvss_score REAL,
+            epss_score REAL,
             description TEXT,
             exploit_available INTEGER,
+            public_exploit INTEGER,
+            commercial_exploit INTEGER,
+            weaponized_exploit INTEGER,
             published_date DATE,
             status TEXT,
             last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -151,10 +155,11 @@ def sync_vulnerabilities_for_asset(asset_id):
     # Build CPE string (simplified - you may need to adjust based on your asset data)
     #cpe = f"cpe:2.3:a:*:{asset['software']}:{asset['version']}:*:*:*:*:*:*:*"
     cpe = asset['cpe_string']
+    app.logger.info(f"Using CPE: {cpe} for asset ID: {asset_id}")
 
     # Search VulnCheck for vulnerabilities
     vuln_data = g.vulncheck_api.search_vulnerabilities_by_cpe(cpe)
-    
+    app.logger.info(f"VulnCheck response for asset ID {asset_id}: {vuln_data}")
     if 'error' in vuln_data:
         return vuln_data
     
@@ -382,7 +387,24 @@ def inventory():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM assets WHERE user_id = ? ORDER BY added_date DESC", (current_user.id,))
     assets = [dict_from_row(row) for row in cursor.fetchall()]
-    
+
+    # compute vulnerability counts per asset for this user
+    cursor.execute("""
+        SELECT v.asset_id, COUNT(*) as cnt
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE a.user_id = ?
+        GROUP BY v.asset_id
+    """, (current_user.id,))
+    counts = {row[0]: row[1] for row in cursor.fetchall()}
+
+    # attach count to each asset dict
+    for a in assets:
+        try:
+            a['vuln_count'] = counts.get(a.get('id'), 0)
+        except Exception:
+            a['vuln_count'] = 0
+
     return render_template('inventory.html', assets=assets)
 
 @app.route('/inventory/add', methods=['GET', 'POST'])
@@ -472,6 +494,7 @@ def delete_asset(asset_id):
 @login_required
 def sync_asset_vulnerabilities(asset_id):
     # Verify asset belongs to user
+    app.logger.info(f"Syncing vulnerabilities for asset ID: {asset_id} by user ID: {current_user.id}")
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM assets WHERE id = ? AND user_id = ?", (asset_id, current_user.id))

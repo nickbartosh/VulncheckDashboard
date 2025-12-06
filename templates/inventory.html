@@ -13,6 +13,7 @@
         <thead class="bg-secondary text-white">
             <tr>
                 <th class="px-6 py-3 text-left text-sm font-semibold">Asset Name</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Vulns</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold">Type</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold">IP Address</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold">Software</th>
@@ -26,6 +27,7 @@
             {% for asset in assets %}
             <tr class="hover:bg-gray-50 transition duration-150">
                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ asset.name }}</td>
+                <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ asset.vuln_count }}</td>
                 <td class="px-6 py-4 text-sm text-gray-700">{{ asset.type }}</td>
                 <td class="px-6 py-4 text-sm text-gray-700">{{ asset.ip_address }}</td>
                 <td class="px-6 py-4 text-sm text-gray-700">{{ asset.software }}</td>
