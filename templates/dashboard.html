@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-actions">
+    <h2>Dashboard Overview</h2>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card">
+        <h3 style="color: #3498db; margin-bottom: 0.5rem;">Total Assets</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #2c3e50;">{{ stats.total_assets }}</p>
+    </div>
+    
+    <div class="card">
+        <h3 style="color: #e67e22; margin-bottom: 0.5rem;">Open Vulnerabilities</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #2c3e50;">{{ stats.total_vulns }}</p>
+    </div>
+    
+    <div class="card">
+        <h3 style="color: #e74c3c; margin-bottom: 0.5rem;">Critical Vulnerabilities</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #2c3e50;">{{ stats.critical_vulns }}</p>
+    </div>
+    
+    <div class="card">
+        <h3 style="color: #c0392b; margin-bottom: 0.5rem;">Exploitable</h3>
+        <p style="font-size: 2.5rem; font-weight: bold; color: #2c3e50;">{{ stats.exploitable_vulns }}</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; color: #2c3e50;">Top Vulnerabilities by Risk</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>CVE ID</th>
+                    <th>Asset</th>
+                    <th>Severity</th>
+                    <th>CVSS</th>
+                    <th>Exploit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vuln in stats.recent_vulns %}
+                <tr>
+                    <td><strong>{{ vuln.cve_id }}</strong></td>
+                    <td>{{ vuln.asset_name }}</td>
+                    <td>
+                        <span class="badge badge-{{ vuln.severity.lower() }}">
+                            {{ vuln.severity }}
+                        </span>
+                    </td>
+                    <td><strong>{{ vuln.cvss_score }}</strong></td>
+                    <td>
+                        {% if vuln.exploit_available %}
+                        <span style="color: #e74c3c; font-weight: bold;">⚠️ Yes</span>
+                        {% else %}
+                        <span style="color: #27ae60;">No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; color: #2c3e50;">Assets by Criticality</h3>
+        <div style="padding: 1rem 0;">
+            {% for item in stats.assets_by_criticality %}
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span class="badge badge-{{ item.criticality.lower() }}">{{ item.criticality }}</span>
+                    <strong>{{ item.count }}</strong>
+                </div>
+                <div style="background: #ecf0f1; height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #3498db; height: 100%; width: 100%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

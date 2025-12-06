@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulnCheck Dashboard - Acme Financial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3498db',
+                        secondary: '#2c3e50',
+                        danger: '#e74c3c',
+                        success: '#27ae60',
+                        warning: '#f39c12',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    {% if current_user.is_authenticated %}
+    <nav class="bg-secondary shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-white text-2xl font-bold">🛡️ VulnCheck Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <a href="{{ url_for('dashboard') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('inventory') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
+                        Inventory
+                    </a>
+                    <a href="{{ url_for('vulnerabilities_view') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
+                        Vulnerabilities
+                    </a>
+                    <div class="border-l border-gray-600 pl-8 flex items-center space-x-4">
+                        <span class="text-white">👤 {{ current_user.username }}</span>
+                        <a href="{{ url_for('logout') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'success' %}
+                    <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-sm">
+                        {{ message }}
+                    </div>
+                    {% elif category == 'error' %}
+                    <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg shadow-sm">
+                        {{ message }}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

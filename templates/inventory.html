@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <h2 class="text-3xl font-bold text-secondary">Asset Inventory</h2>
+    <a href="{{ url_for('add_asset') }}" class="bg-primary hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-150 shadow-md">
+        + Add New Asset
+    </a>
+</div>
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-secondary text-white">
+            <tr>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Asset Name</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Type</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">IP Address</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Software</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Version</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Criticality</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Added Date</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+            {% for asset in assets %}
+            <tr class="hover:bg-gray-50 transition duration-150">
+                <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ asset.name }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ asset.type }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ asset.ip_address }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ asset.software }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ asset.version }}</td>
+                <td class="px-6 py-4 text-sm">
+                    {% if asset.criticality == 'Critical' %}
+                    <span class="inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold">
+                        {{ asset.criticality }}
+                    </span>
+                    {% elif asset.criticality == 'High' %}
+                    <span class="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold">
+                        {{ asset.criticality }}
+                    </span>
+                    {% elif asset.criticality == 'Medium' %}
+                    <span class="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold">
+                        {{ asset.criticality }}
+                    </span>
+                    {% else %}
+                    <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">
+                        {{ asset.criticality }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ asset.added_date }}</td>
+                <td class="px-6 py-4 text-sm">
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ url_for('sync_asset_vulnerabilities', asset_id=asset.id) }}" 
+                           class="bg-success hover:bg-green-600 text-white py-1 px-3 rounded transition duration-150"
+                           title="Sync vulnerabilities from VulnCheck">
+                            🔄
+                        </a>
+                        <a href="{{ url_for('edit_asset', asset_id=asset.id) }}" 
+                           class="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition duration-150">
+                            Edit
+                        </a>
+                        <a href="{{ url_for('delete_asset', asset_id=asset.id) }}" 
+                           class="bg-danger hover:bg-red-600 text-white py-1 px-3 rounded transition duration-150"
+                           onclick="return confirm('Are you sure? This will also delete associated vulnerabilities.')">
+                            Delete
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                    No assets found. <a href="{{ url_for('add_asset') }}" class="text-primary hover:underline">Add your first asset</a>.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
