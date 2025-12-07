@@ -159,33 +159,46 @@ def sync_vulnerabilities_for_asset(asset_id):
 
     # Search VulnCheck for vulnerabilities
     vuln_data = g.vulncheck_api.search_vulnerabilities_by_cpe(cpe)
+    app.logger.info(f"Starting CVE Pull")
     app.logger.info(f"VulnCheck response for asset ID {asset_id}: {vuln_data}")
     if 'error' in vuln_data:
         return vuln_data
     
     synced_count = 0
     data = vuln_data.get('data', [])
-    
-    for vuln in data[:50]:  # Limit to 50 vulnerabilities
-        cve_id = vuln.get('cve_id', '')
-        
+    app.logger.info(f"Vuln data {data}")
+
+    # Process each vulnerability
+    for cve_id in data[:50]:  # Limit to 50 vulnerabilities
+
         # Check if exploit is available
+        cve_info = g.vulncheck_api.get_vulnerability_info(cve_id)
+        app.logger.info(f"CVE Data for {cve_id}: {cve_info}")
+        cve_data = cve_info.get('data', [])
+
         exploit_info = g.vulncheck_api.get_exploit_info(cve_id)
         exploit_available = 1 if len(exploit_info.get('data', [])) > 0 else 0
-        
+        public_exploit = 1
+        commercial_exploit = 1
+        weaponized_exploit = 1
+
         # Insert or update vulnerability
         cursor.execute("""
             INSERT OR REPLACE INTO vulnerabilities 
-            (cve_id, asset_id, severity, cvss_score, description, exploit_available, published_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (cve_id, asset_id, severity, cvss_score, description, exploit_available, public_exploit, 
+                       commercial_exploit, weaponized_exploit,  published_date, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             cve_id,
             asset_id,
-            vuln.get('severity', 'Unknown'),
-            vuln.get('cvss_score', 0.0),
-            vuln.get('description', '')[:500],
+            cve_data[0]['impact'].get('metricV40', {}).get('baseSeverity', 'Unknown'),
+            cve_data[0]['impact'].get('metricV40', {}).get('baseScore', 0.0),
+            cve_data[0]['cve'].get('description', {})['description_data'][0]['value'][:500],
             exploit_available,
-            vuln.get('published_date', datetime.now().strftime('%Y-%m-%d')),
+            public_exploit,
+            commercial_exploit,
+            weaponized_exploit,
+            cve_data[0].get('published_date', datetime.now().strftime('%Y-%m-%d')),
             'Open'
         ))
         synced_count += 1
