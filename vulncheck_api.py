@@ -33,9 +33,13 @@ class VulnCheckAPI:
         """Search vulnerabilities by CPE string."""
         return self._make_request('cpe', {'cpe': cpe_string})
     
-    def get_vulnerability_info(self, cve_id):
+    def get_vulnerability_info_nist(self, cve_id):
         """Get detailed information for a specific CVE."""
         return self._make_request('index/nist-nvd', {'cve': cve_id})
+
+    def get_vulnerability_info_vulncheck(self, cve_id):
+        """Get detailed information for a specific CVE from VulnCheck index."""
+        return self._make_request('index/vulncheck-nvd2', {'cve': cve_id})
     
     def get_exploit_info(self, cve_id):
         """Get exploit information for a CVE."""

@@ -116,6 +116,11 @@ def init_database():
             public_exploit INTEGER,
             commercial_exploit INTEGER,
             weaponized_exploit INTEGER,
+            reported_honeypots INTEGER,
+            reported_canaries INTEGER,
+            reported_botnets INTEGER,
+            reported_threat_actors INTEGER,
+            reported_ransomware INTEGER,
             published_date DATE,
             status TEXT,
             last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -169,36 +174,63 @@ def sync_vulnerabilities_for_asset(asset_id):
     app.logger.info(f"Vuln data {data}")
 
     # Process each vulnerability
-    for cve_id in data[:50]:  # Limit to 50 vulnerabilities
+    for cve_id in data[:100]:  # Limit to 100 vulnerabilities
 
         # Check if exploit is available
-        cve_info = g.vulncheck_api.get_vulnerability_info(cve_id)
-        app.logger.info(f"CVE Data for {cve_id}: {cve_info}")
-        cve_data = cve_info.get('data', [])
-
+        # cve_info = g.vulncheck_api.get_vulnerability_info_nist(cve_id)
+        vc_cve_info = g.vulncheck_api.get_vulnerability_info_vulncheck(cve_id)
         exploit_info = g.vulncheck_api.get_exploit_info(cve_id)
+
+        # cve_data = cve_info.get('data', [])
+        vc_cve_data = vc_cve_info.get('data', [])
+        vc_exploit_data = exploit_info.get('data', [])
+
+        # Pull CVSS Data if it exists
+        cvssData = []
+        if len(vc_cve_data[0]['metrics'].get('cvssMetricV40', {})):
+            cvssData = vc_cve_data[0]['metrics'].get('cvssMetricV40', {})[0]
+        elif len(vc_cve_data[0]['metrics'].get('cvssMetricV31', {})):
+            cvssData = vc_cve_data[0]['metrics'].get('cvssMetricV31', {})[0]
+
+
         exploit_available = 1 if len(exploit_info.get('data', [])) > 0 else 0
-        public_exploit = 1
-        commercial_exploit = 1
-        weaponized_exploit = 1
+        app.logger.info(f"Exploit data for {cve_id}: {vc_cve_data[0]['metrics'].get('cvssMetricV31', {})}")
+        cvss_severity = cvssData.get('cvssData', {}).get('baseSeverity') if cvssData else 'Unknown'
+        cvss_basescore = cvssData.get('cvssData', {}).get('baseScore') if cvssData else 0.0
+        epss_score = vc_exploit_data[0]['epss'].get('epss_score', 0.0) if exploit_available else 0.0
+        public_exploit = vc_exploit_data[0].get('public_exploit_found') if exploit_available else 0
+        commercial_exploit = vc_exploit_data[0].get('commercial_exploit_found') if exploit_available else 0
+        weaponized_exploit = vc_exploit_data[0].get('weaponized_exploit_found') if exploit_available else 0
+        reported_honeypots = vc_exploit_data[0].get('reported_exploited_by_honeypot_service') if exploit_available else 0
+        reported_canaries = vc_exploit_data[0].get('reported_exploited_by_vulncheck_canaries') if exploit_available else 0
+        reported_botnets = vc_exploit_data[0].get('reported_exploited_by_botnets') if exploit_available else 0
+        reported_threat_actors = vc_exploit_data[0].get('reported_exploited_by_threat_actors') if exploit_available else 0
+        reported_ransomware = vc_exploit_data[0].get('reported_exploited_by_ransomware') if exploit_available else 0
 
         # Insert or update vulnerability
         cursor.execute("""
             INSERT OR REPLACE INTO vulnerabilities 
-            (cve_id, asset_id, severity, cvss_score, description, exploit_available, public_exploit, 
-                       commercial_exploit, weaponized_exploit,  published_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (cve_id, asset_id, severity, cvss_score, epss_score, description, exploit_available, public_exploit, 
+                       commercial_exploit, weaponized_exploit, reported_honeypots, reported_canaries, 
+                       reported_botnets, reported_threat_actors, reported_ransomware, published_date, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             cve_id,
             asset_id,
-            cve_data[0]['impact'].get('metricV40', {}).get('baseSeverity', 'Unknown'),
-            cve_data[0]['impact'].get('metricV40', {}).get('baseScore', 0.0),
-            cve_data[0]['cve'].get('description', {})['description_data'][0]['value'][:500],
+            cvss_severity,
+            cvss_basescore,
+            epss_score,
+            vc_cve_data[0]['descriptions'][0].get('value', ''),
             exploit_available,
             public_exploit,
             commercial_exploit,
             weaponized_exploit,
-            cve_data[0].get('published_date', datetime.now().strftime('%Y-%m-%d')),
+            reported_honeypots,
+            reported_canaries,
+            reported_botnets,
+            reported_threat_actors,
+            reported_ransomware,
+            vc_cve_data[0].get('published', datetime.now().strftime('%Y-%m-%d')),
             'Open'
         ))
         synced_count += 1
@@ -281,11 +313,20 @@ def dashboard():
         SELECT COUNT(DISTINCT v.id)
         FROM vulnerabilities v
         JOIN assets a ON v.asset_id = a.id
-        WHERE a.user_id = ? AND v.severity = 'Critical' AND v.status = 'Open'
+        WHERE a.user_id = ? AND v.severity = 'CRITICAL' AND v.status = 'Open'
     """, (current_user.id,))
     critical_vulns = cursor.fetchone()[0]
     
     cursor.execute("""
+        SELECT COUNT(DISTINCT v.id)
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE a.user_id = ? AND v.severity = 'HIGH' AND v.status = 'Open'
+    """, (current_user.id,))
+    high_vulns = cursor.fetchone()[0]
+    
+    cursor.execute("""
+                   
         SELECT COUNT(DISTINCT v.id)
         FROM vulnerabilities v
         JOIN assets a ON v.asset_id = a.id
@@ -312,14 +353,27 @@ def dashboard():
         GROUP BY criticality
     """, (current_user.id,))
     assets_by_criticality = [dict_from_row(row) for row in cursor.fetchall()]
+
+ # Vulnerability counts grouped by severity for charting
+    cursor.execute("""
+        SELECT v.severity, COUNT(*) as count
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE a.user_id = ?
+        GROUP BY v.severity
+    """, (current_user.id,))
+    vulns_by_severity_rows = cursor.fetchall()
+    vulns_by_severity = {row['severity'] if row['severity'] is not None else 'Unknown': row['count'] for row in vulns_by_severity_rows}
     
     stats = {
         'total_assets': total_assets,
         'total_vulns': total_vulns,
         'critical_vulns': critical_vulns,
+        'high_vulns': high_vulns,
         'exploitable_vulns': exploitable_vulns,
         'recent_vulns': recent_vulns,
-        'assets_by_criticality': assets_by_criticality
+        'assets_by_criticality': assets_by_criticality,
+        'vulns_by_severity': vulns_by_severity
     }
     
     return render_template('dashboard.html', stats=stats)
@@ -533,17 +587,94 @@ def vulnerabilities_view():
     cursor.execute("SELECT * FROM assets WHERE user_id = ?", (current_user.id,))
     assets = [dict_from_row(row) for row in cursor.fetchall()]
     
-    # Get vulnerabilities for user's assets
-    cursor.execute("""
+    # Get filter and sort parameters from query string
+    asset_id_filter = request.args.get('asset_id', '')
+    severity_filter = request.args.get('severity', '').upper()
+    exploit_filter = request.args.get('exploit_available', '')
+    sort_by = request.args.get('sort_by', 'cvss_score')
+    sort_order = request.args.get('sort_order', 'DESC')
+    
+    # Validate sort_order to prevent SQL injection
+    if sort_order not in ('ASC', 'DESC'):
+        sort_order = 'DESC'
+    
+    # Validate sort_by to prevent SQL injection
+    valid_sort_cols = ['cve_id', 'severity', 'cvss_score', 'published_date', 'last_updated', 'exploit_available', 'status']
+    if sort_by not in valid_sort_cols:
+        sort_by = 'cvss_score'
+    
+    # Build WHERE clause dynamically
+    where_clauses = ["a.user_id = ?"]
+    params = [current_user.id]
+    
+    if asset_id_filter:
+        where_clauses.append("v.asset_id = ?")
+        params.append(asset_id_filter)
+    
+    if severity_filter:
+        where_clauses.append("v.severity = ?")
+        params.append(severity_filter)
+    
+    if exploit_filter:
+        where_clauses.append("v.exploit_available = ?")
+        params.append(int(exploit_filter))
+
+    
+    where_clause = " AND ".join(where_clauses)
+    
+    # Get vulnerabilities for user's assets with filters and sorting
+    query = f"""
         SELECT v.*, a.name as asset_name 
         FROM vulnerabilities v
         JOIN assets a ON v.asset_id = a.id
-        WHERE a.user_id = ?
-        ORDER BY v.cvss_score DESC, v.last_updated DESC
-    """, (current_user.id,))
+        WHERE {where_clause}
+        ORDER BY v.{sort_by} {sort_order}
+    """
+    app.logger.info(f"Vulnerabilities query: {query} with params {params}")
+    cursor.execute(query, params)
     vulnerabilities = [dict_from_row(row) for row in cursor.fetchall()]
     
-    return render_template('vulnerabilities.html', vulnerabilities=vulnerabilities, assets=assets)
+    return render_template('vulnerabilities.html', 
+                          vulnerabilities=vulnerabilities, 
+                          assets=assets,
+                          current_filters={
+                              'asset_id': asset_id_filter,
+                              'severity': severity_filter,
+                              'exploit_available': exploit_filter,
+                              'sort_by': sort_by,
+                              'sort_order': sort_order
+                          })
+
+
+@app.route('/vulnerabilities/cve/<string:cve_id>')
+@login_required
+def cve_view(cve_id):
+    """Detailed CVE view. Pulls info from VulnCheck and shows local impacted assets."""
+    # Fetch CVE info from VulnCheck
+    cve_info = g.vulncheck_api.get_vulnerability_info_nist(cve_id)
+    if 'error' in cve_info:
+        flash(f"Error retrieving CVE {cve_id}: {cve_info.get('error')}", 'error')
+        return redirect(url_for('vulnerabilities_view'))
+
+    cve_data_list = cve_info.get('data', [])
+    cve_item = cve_data_list[0] if len(cve_data_list) > 0 else None
+
+    # Fetch exploit info
+    exploit_info = g.vulncheck_api.get_exploit_info(cve_id)
+    exploit_data = exploit_info.get('data', []) if isinstance(exploit_info, dict) else []
+
+    # Find local vulnerability records (assets impacted) for current user
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT v.*, a.name as asset_name
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE v.cve_id = ? AND a.user_id = ?
+    """, (cve_id, current_user.id))
+    impacted = [dict_from_row(row) for row in cursor.fetchall()]
+
+    return render_template('cve.html', cve_id=cve_id, cve_item=cve_item, exploit_data=exploit_data, impacted=impacted)
 
 @app.route('/api/vulnerabilities/<int:asset_id>')
 @login_required
