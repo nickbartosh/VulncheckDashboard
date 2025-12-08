@@ -354,6 +354,7 @@ def dashboard():
     """, (current_user.id,))
     assets_by_criticality = [dict_from_row(row) for row in cursor.fetchall()]
 
+
  # Vulnerability counts grouped by severity for charting
     cursor.execute("""
         SELECT v.severity, COUNT(*) as count
@@ -364,6 +365,29 @@ def dashboard():
     """, (current_user.id,))
     vulns_by_severity_rows = cursor.fetchall()
     vulns_by_severity = {row['severity'] if row['severity'] is not None else 'Unknown': row['count'] for row in vulns_by_severity_rows}
+
+    # Get vulnerabilities per asset grouped by severity
+    cursor.execute("""
+        SELECT a.id, a.name, v.severity, COUNT(*) as count
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE a.user_id = ?
+        GROUP BY a.id, a.name, v.severity
+        ORDER BY a.name
+    """, (current_user.id,))
+    asset_vuln_rows = cursor.fetchall()
+    
+    # Transform into dict: {asset_id: {name: 'X', vulnerabilities: {severity: count}}}
+    asset_vulns = {}
+    for row in asset_vuln_rows:
+        asset_id = row['id']
+        if asset_id not in asset_vulns:
+            asset_vulns[asset_id] = {'name': row['name'], 'vulnerabilities': {}}
+        severity = row['severity'] if row['severity'] is not None else 'Unknown'
+        asset_vulns[asset_id]['vulnerabilities'][severity] = row['count']
+    
+    # Convert to list and sort by name
+    assets_with_vulns = sorted(asset_vulns.values(), key=lambda x: x['name'])
     
     stats = {
         'total_assets': total_assets,
@@ -373,7 +397,8 @@ def dashboard():
         'exploitable_vulns': exploitable_vulns,
         'recent_vulns': recent_vulns,
         'assets_by_criticality': assets_by_criticality,
-        'vulns_by_severity': vulns_by_severity
+        'vulns_by_severity': vulns_by_severity,
+        'assets_with_vulns': assets_with_vulns
     }
     
     return render_template('dashboard.html', stats=stats)

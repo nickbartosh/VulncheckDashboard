@@ -67,7 +67,7 @@
 
         <div class="flex items-end gap-2">
             <button type="submit" class="w-full bg-primary text-white px-4 py-2 rounded-lg shadow hover:opacity-95 transition duration-150 text-sm font-medium">
-                Apply Filters
+                Apply
             </button>
             <a href="{{ url_for('vulnerabilities_view') }}" class="block w-full text-center bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow hover:bg-gray-300 transition duration-150 text-sm font-medium">
                 Clear
@@ -85,7 +85,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('severity')">Severity {% if current_filters.sort_by == 'severity' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('cvss_score')">CVSS Score {% if current_filters.sort_by == 'cvss_score' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EPSS Score</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('exploit_available')">Exploit {% if current_filters.sort_by == 'exploit_available' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('published_date')">Published {% if current_filters.sort_by == 'published_date' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('status')">Status {% if current_filters.sort_by == 'status' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
@@ -133,7 +133,7 @@
                         <span class="text-sm font-bold text-gray-900">{{ vuln.cvss_score }}</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-700 max-w-md">
-                        <div class="truncate">{{ vuln.description[:100] }}{% if vuln.description|length > 100 %}...{% endif %}</div>
+                        <div class="text-sm font-bold text-gray-900">{{ (vuln.epss_score * 100) | round(2) }}%</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         {% if vuln.exploit_available %}
