@@ -4,47 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VulnCheck Dashboard - Acme Financial</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3498db',
-                        secondary: '#2c3e50',
-                        danger: '#e74c3c',
-                        success: '#27ae60',
-                        warning: '#f39c12',
+                        'vc-blue': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e3a8a',
+                            900: '#1e293b',
+                            950: '#0f172a',
+                        },
+                        'vc-emerald': {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        'vc-slate': {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
                     }
                 }
             }
         }
     </script>
+    <style>
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-vc-slate-50">
     {% if current_user.is_authenticated %}
-    <nav class="bg-secondary shadow-lg">
+    <nav class="bg-vc-blue-950 border-b border-vc-blue-900 shadow-xl">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1 class="text-white text-2xl font-bold">🛡️ VulnCheck Dashboard</h1>
-                </div>
                 <div class="flex items-center space-x-8">
-                    <a href="{{ url_for('dashboard') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
-                        Dashboard
-                    </a>
-                    <a href="{{ url_for('inventory') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
-                        Inventory
-                    </a>
-                    <a href="{{ url_for('vulnerabilities_view') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
-                        Vulnerabilities
-                    </a>
-                    <div class="border-l border-gray-600 pl-8 flex items-center space-x-4">
-                        <span class="text-white">👤 {{ current_user.username }}</span>
-                        <a href="{{ url_for('logout') }}" class="text-white hover:text-gray-300 font-medium transition duration-150">
-                            Logout
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-shield-halved text-vc-emerald-400 text-2xl"></i>
+                        <h1 class="text-white text-xl font-bold tracking-tight">VulnCheck Dashboard</h1>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a href="{{ url_for('dashboard') }}" class="px-4 py-2 text-vc-slate-200 hover:text-white hover:bg-vc-blue-900 rounded-md font-medium transition duration-150">
+                            <i class="fas fa-chart-line mr-2"></i>Dashboard
+                        </a>
+                        <a href="{{ url_for('inventory') }}" class="px-4 py-2 text-vc-slate-200 hover:text-white hover:bg-vc-blue-900 rounded-md font-medium transition duration-150">
+                            <i class="fas fa-server mr-2"></i>Inventory
+                        </a>
+                        <a href="{{ url_for('vulnerabilities_view') }}" class="px-4 py-2 text-vc-slate-200 hover:text-white hover:bg-vc-blue-900 rounded-md font-medium transition duration-150">
+                            <i class="fas fa-bug mr-2"></i>Vulnerabilities
                         </a>
                     </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3 px-4 py-2 bg-vc-blue-900 rounded-md">
+                        <i class="fas fa-user-circle text-vc-emerald-400 text-lg"></i>
+                        <span class="text-white font-medium">{{ current_user.username }}</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-vc-emerald-600 hover:bg-vc-emerald-700 text-white rounded-md font-medium transition duration-150 shadow-sm">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
                 </div>
             </div>
         </div>
@@ -56,12 +108,14 @@
             {% if messages %}
                 {% for category, message in messages %}
                     {% if category == 'success' %}
-                    <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-sm">
-                        {{ message }}
+                    <div class="mb-6 bg-vc-emerald-50 border-l-4 border-vc-emerald-600 text-vc-emerald-900 px-5 py-4 rounded-r-lg shadow-md flex items-center">
+                        <i class="fas fa-check-circle text-vc-emerald-600 text-xl mr-3"></i>
+                        <span class="font-medium">{{ message }}</span>
                     </div>
                     {% elif category == 'error' %}
-                    <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg shadow-sm">
-                        {{ message }}
+                    <div class="mb-6 bg-red-50 border-l-4 border-red-600 text-red-900 px-5 py-4 rounded-r-lg shadow-md flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-600 text-xl mr-3"></i>
+                        <span class="font-medium">{{ message }}</span>
                     </div>
                     {% endif %}
                 {% endfor %}

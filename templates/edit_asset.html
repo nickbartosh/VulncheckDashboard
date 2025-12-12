@@ -1,130 +1,182 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card" style="max-width: 600px; margin: 0 auto;">
-    <h2 style="margin-bottom: 2rem;">Edit Asset</h2>
-    
-    <form method="POST">
-        <div class="form-group">
-            <label for="name">Asset Name *</label>
-            <input type="text" id="name" name="name" value="{{ asset.name }}" required>
+<div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center mb-3">
+            <a href="{{ url_for('inventory') }}" class="text-vc-blue-600 hover:text-vc-blue-700 mr-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h2 class="text-3xl font-bold text-vc-blue-950">Edit Asset</h2>
         </div>
-        
-        <div class="form-group">
-            <label for="type">Asset Type *</label>
-            <select id="type" name="type" required>
-                <option value="Server" {% if asset.type == 'Server' %}selected{% endif %}>Server</option>
-                <option value="Database" {% if asset.type == 'Database' %}selected{% endif %}>Database</option>
-                <option value="Workstation" {% if asset.type == 'Workstation' %}selected{% endif %}>Workstation</option>
-                <option value="Network Device" {% if asset.type == 'Network Device' %}selected{% endif %}>Network Device</option>
-                <option value="Application" {% if asset.type == 'Application' %}selected{% endif %}>Application</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="ip_address">IP Address *</label>
-            <input type="text" id="ip_address" name="ip_address" value="{{ asset.ip_address }}" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="software">Software *</label>
-            <input type="text" id="software" name="software" value="{{ asset.software }}" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="version">Version *</label>
-            <input type="text" id="version" name="version" value="{{ asset.version }}" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="criticality">Criticality *</label>
-            <select id="criticality" name="criticality" required>
-                <option value="Critical" {% if asset.criticality == 'Critical' %}selected{% endif %}>Critical</option>
-                <option value="High" {% if asset.criticality == 'High' %}selected{% endif %}>High</option>
-                <option value="Medium" {% if asset.criticality == 'Medium' %}selected{% endif %}>Medium</option>
-                <option value="Low" {% if asset.criticality == 'Low' %}selected{% endif %}>Low</option>
-            </select>
-        </div>
-        
-        <div style="display: flex; gap: 1rem;">
-            <button type="submit" class="btn btn-primary">Update Asset</button>
-            <a href="{{ url_for('inventory') }}" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
-</div>
-{% endblock %}
-"""
+        <p class="text-vc-slate-600">Update asset information and configuration</p>
+    </div>
 
-# vulnerabilities.html
-"""
-{% extends "base.html" %}
+    <!-- Form Card -->
+    <div class="card border border-vc-slate-200">
+        <form method="POST" class="space-y-6">
+            <!-- Asset Name -->
+            <div>
+                <label for="name" class="block text-sm font-bold text-vc-blue-950 mb-2 uppercase tracking-wide">
+                    <i class="fas fa-tag text-vc-blue-600 mr-2"></i>Asset Name *
+                </label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value="{{ asset.name }}"
+                    required
+                    class="w-full px-4 py-3 border-2 border-vc-slate-200 rounded-lg focus:border-vc-blue-500 focus:outline-none focus:ring-2 focus:ring-vc-blue-100 transition-colors font-medium text-vc-blue-950"
+                    placeholder="Enter asset name"
+                >
+            </div>
 
-{% block content %}
-<div class="header-actions">
-    <h2>Vulnerability Intelligence</h2>
-    <div>
-        <select id="assetFilter" style="padding: 0.6rem; border-radius: 4px; border: 1px solid #ddd;">
-            <option value="">All Assets</option>
-            {% for asset in assets %}
-            <option value="{{ asset.id }}">{{ asset.name }}</option>
-            {% endfor %}
-        </select>
+            <!-- Asset Type & IP Address Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="type" class="block text-sm font-bold text-vc-blue-950 mb-2 uppercase tracking-wide">
+                        <i class="fas fa-server text-vc-blue-600 mr-2"></i>Asset Type *
+                    </label>
+                    <select
+                        id="type"
+                        name="type"
+                        required
+                        class="w-full px-4 py-3 border-2 border-vc-slate-200 rounded-lg focus:border-vc-blue-500 focus:outline-none focus:ring-2 focus:ring-vc-blue-100 transition-colors font-medium text-vc-blue-950 bg-white"
+                    >
+                        <option value="Server" {% if asset.type == 'Server' %}selected{% endif %}>Server</option>
+                        <option value="Database" {% if asset.type == 'Database' %}selected{% endif %}>Database</option>
+                        <option value="Workstation" {% if asset.type == 'Workstation' %}selected{% endif %}>Workstation</option>
+                        <option value="Network Device" {% if asset.type == 'Network Device' %}selected{% endif %}>Network Device</option>
+                        <option value="Application" {% if asset.type == 'Application' %}selected{% endif %}>Application</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="ip_address" class="block text-sm font-bold text-vc-blue-950 mb-2 uppercase tracking-wide">
+                        <i class="fas fa-network-wired text-vc-blue-600 mr-2"></i>IP Address *
+                    </label>
+                    <input
+                        type="text"
+                        id="ip_address"
+                        name="ip_address"
+                        value="{{ asset.ip_address }}"
+                        required
+                        class="w-full px-4 py-3 border-2 border-vc-slate-200 rounded-lg focus:border-vc-blue-500 focus:outline-none focus:ring-2 focus:ring-vc-blue-100 transition-colors font-mono text-vc-blue-950"
+                        placeholder="192.168.1.1"
+                    >
+                </div>
+            </div>
+
+            <!-- CPE String -->
+            <div>
+                <label for="cpe_string" class="block text-sm font-bold text-vc-blue-950 mb-2 uppercase tracking-wide">
+                    <i class="fas fa-code text-vc-blue-600 mr-2"></i>CPE String *
+                </label>
+                <input
+                    type="text"
+                    id="cpe_string"
+                    name="cpe_string"
+                    value="{{ asset.cpe_string }}"
+                    required
+                    class="w-full px-4 py-3 border-2 border-vc-slate-200 rounded-lg focus:border-vc-blue-500 focus:outline-none focus:ring-2 focus:ring-vc-blue-100 transition-colors font-mono text-sm text-vc-blue-950"
+                    placeholder="cpe:2.3:a:vendor:product:version:*:*:*:*:*:*:*"
+                >
+                <p class="mt-2 text-xs text-vc-slate-500">
+                    <i class="fas fa-info-circle mr-1"></i>Common Platform Enumeration string for vulnerability matching
+                </p>
+            </div>
+
+            <!-- Software & Version Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="software" class="block text-sm font-bold text-vc-blue-950 mb-2 uppercase tracking-wide">
+                        <i class="fas fa-cube text-vc-blue-600 mr-2"></i>Software *
+                    </label>
+                    <input
+                        type="text"
+                        id="software"
+                        name="software"
+                        value="{{ asset.software }}"
+                        required
+                        class="w-full px-4 py-3 border-2 border-vc-slate-200 rounded-lg focus:border-vc-blue-500 focus:outline-none focus:ring-2 focus:ring-vc-blue-100 transition-colors font-medium text-vc-blue-950"
+                        placeholder="e.g., nginx, apache, mysql"
+                    >
+                </div>
+
+                <div>
+                    <label for="version" class="block text-sm font-bold text-vc-blue-950 mb-2 uppercase tracking-wide">
+                        <i class="fas fa-code-branch text-vc-blue-600 mr-2"></i>Version *
+                    </label>
+                    <input
+                        type="text"
+                        id="version"
+                        name="version"
+                        value="{{ asset.version }}"
+                        required
+                        class="w-full px-4 py-3 border-2 border-vc-slate-200 rounded-lg focus:border-vc-blue-500 focus:outline-none focus:ring-2 focus:ring-vc-blue-100 transition-colors font-mono text-vc-blue-950"
+                        placeholder="e.g., 1.21.0"
+                    >
+                </div>
+            </div>
+
+            <!-- Criticality -->
+            <div>
+                <label for="criticality" class="block text-sm font-bold text-vc-blue-950 mb-2 uppercase tracking-wide">
+                    <i class="fas fa-exclamation-triangle text-vc-blue-600 mr-2"></i>Criticality *
+                </label>
+                <select
+                    id="criticality"
+                    name="criticality"
+                    required
+                    class="w-full px-4 py-3 border-2 border-vc-slate-200 rounded-lg focus:border-vc-blue-500 focus:outline-none focus:ring-2 focus:ring-vc-blue-100 transition-colors font-medium text-vc-blue-950 bg-white"
+                >
+                    <option value="Critical" {% if asset.criticality == 'Critical' %}selected{% endif %}>
+                        🔴 Critical - Mission critical asset
+                    </option>
+                    <option value="High" {% if asset.criticality == 'High' %}selected{% endif %}>
+                        🟠 High - Important production asset
+                    </option>
+                    <option value="Medium" {% if asset.criticality == 'Medium' %}selected{% endif %}>
+                        🟡 Medium - Standard asset
+                    </option>
+                    <option value="Low" {% if asset.criticality == 'Low' %}selected{% endif %}>
+                        🟢 Low - Non-critical asset
+                    </option>
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-vc-slate-200">
+                <button
+                    type="submit"
+                    class="flex-1 px-6 py-3 bg-vc-emerald-600 hover:bg-vc-emerald-700 text-white font-bold rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                >
+                    <i class="fas fa-save mr-2"></i>Update Asset
+                </button>
+                <a
+                    href="{{ url_for('inventory') }}"
+                    class="flex-1 px-6 py-3 bg-vc-slate-200 hover:bg-vc-slate-300 text-vc-slate-700 font-bold rounded-lg transition-colors text-center flex items-center justify-center"
+                >
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Help Card -->
+    <div class="mt-6 bg-vc-blue-50 border-l-4 border-vc-blue-600 rounded-r-lg p-5">
+        <div class="flex items-start">
+            <i class="fas fa-lightbulb text-vc-blue-600 text-xl mr-3 mt-1"></i>
+            <div>
+                <h4 class="font-bold text-vc-blue-950 mb-2">Tips for Asset Management</h4>
+                <ul class="text-sm text-vc-blue-900 space-y-1">
+                    <li><i class="fas fa-check text-vc-emerald-600 mr-2"></i>Ensure the CPE string accurately matches the software and version</li>
+                    <li><i class="fas fa-check text-vc-emerald-600 mr-2"></i>Set appropriate criticality to prioritize vulnerability remediation</li>
+                    <li><i class="fas fa-check text-vc-emerald-600 mr-2"></i>Keep software versions up to date for accurate vulnerability tracking</li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
-
-<table>
-    <thead>
-        <tr>
-            <th>CVE ID</th>
-            <th>Asset</th>
-            <th>Severity</th>
-            <th>CVSS Score</th>
-            <th>Description</th>
-            <th>Exploit Available</th>
-            <th>Published</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody id="vulnTableBody">
-        {% for vuln in vulnerabilities %}
-        <tr data-asset-id="{{ vuln.asset_id }}">
-            <td><strong>{{ vuln.cve_id }}</strong></td>
-            <td>{{ vuln.asset_name }}</td>
-            <td>
-                <span class="badge badge-{{ vuln.severity.lower() }}">
-                    {{ vuln.severity }}
-                </span>
-            </td>
-            <td><strong>{{ vuln.cvss_score }}</strong></td>
-            <td>{{ vuln.description[:100] }}{% if vuln.description|length > 100 %}...{% endif %}</td>
-            <td>
-                {% if vuln.exploit_available %}
-                <span style="color: #e74c3c; font-weight: bold;">⚠️ Yes</span>
-                {% else %}
-                <span style="color: #27ae60;">No</span>
-                {% endif %}
-            </td>
-            <td>{{ vuln.published_date }}</td>
-            <td>
-                <span class="badge" style="background: #e67e22;">{{ vuln.status }}</span>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<script>
-    document.getElementById('assetFilter').addEventListener('change', function() {
-        const assetId = this.value;
-        const rows = document.querySelectorAll('#vulnTableBody tr');
-        
-        rows.forEach(row => {
-            if (assetId === '' || row.dataset.assetId === assetId) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    });
-</script>
 {% endblock %}

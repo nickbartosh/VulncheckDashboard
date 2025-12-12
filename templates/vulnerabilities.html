@@ -7,14 +7,29 @@
         <p class="text-gray-600 mt-2">Track and manage security vulnerabilities across your assets</p>
     </div>
     <div class="flex items-center space-x-4">
-        <a href="{{ url_for('export_vulnerabilities_pdf') }}"
-           class="bg-primary text-white px-4 py-2 rounded-lg shadow hover:opacity-95 transition duration-150 text-sm">
-            Export All (PDF)
-        </a>
+        <!-- Export Format Dropdown -->
+        <div class="relative inline-block">
+            <button id="exportDropdownBtn"
+                    class="bg-vc-blue-600 hover:bg-vc-blue-700 text-white px-4 py-2 rounded-lg shadow transition duration-150 text-sm font-medium flex items-center">
+                <i class="fas fa-download mr-2"></i>Export
+                <i class="fas fa-chevron-down ml-2"></i>
+            </button>
+            <div id="exportDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-vc-slate-200 z-10">
+                <button id="exportPdfBtn" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-vc-slate-50 flex items-center rounded-t-lg">
+                    <i class="fas fa-file-pdf text-red-600 mr-2"></i>Export as PDF
+                </button>
+                <button id="exportCsvBtn" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-vc-slate-50 flex items-center">
+                    <i class="fas fa-file-csv text-green-600 mr-2"></i>Export as CSV
+                </button>
+                <button id="exportJsonBtn" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-vc-slate-50 flex items-center rounded-b-lg">
+                    <i class="fas fa-file-code text-blue-600 mr-2"></i>Export as JSON
+                </button>
+            </div>
+        </div>
 
         <button id="exportSelectedBtn"
-                class="bg-secondary text-white px-4 py-2 rounded-lg shadow hover:opacity-95 transition duration-150 text-sm">
-            Export Selected Asset (PDF)
+                class="bg-vc-emerald-600 hover:bg-vc-emerald-700 text-white px-4 py-2 rounded-lg shadow transition duration-150 text-sm font-medium flex items-center">
+            <i class="fas fa-file-export mr-2"></i>Export Selected Asset (PDF)
         </button>
     </div>
 </div>
@@ -66,11 +81,11 @@
         </div>
 
         <div class="flex items-end gap-2">
-            <button type="submit" class="w-full bg-primary text-white px-4 py-2 rounded-lg shadow hover:opacity-95 transition duration-150 text-sm font-medium">
-                Apply
+            <button type="submit" class="w-full bg-vc-blue-600 hover:bg-vc-blue-700 text-white px-4 py-2 rounded-lg shadow transition duration-150 text-sm font-medium">
+                <i class="fas fa-filter mr-2"></i>Apply
             </button>
-            <a href="{{ url_for('vulnerabilities_view') }}" class="block w-full text-center bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow hover:bg-gray-300 transition duration-150 text-sm font-medium">
-                Clear
+            <a href="{{ url_for('vulnerabilities_view') }}" class="block w-full text-center bg-vc-slate-200 hover:bg-vc-slate-300 text-vc-slate-700 px-4 py-2 rounded-lg shadow transition duration-150 text-sm font-medium">
+                <i class="fas fa-times mr-2"></i>Clear
             </a>
         </div>
     </form>
@@ -88,7 +103,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EPSS Score</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('exploit_available')">Exploit {% if current_filters.sort_by == 'exploit_available' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('published_date')">Published {% if current_filters.sort_by == 'published_date' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('status')">Status {% if current_filters.sort_by == 'status' %}<span class="text-primary font-bold">{{ '↑' if current_filters.sort_order == 'ASC' else '↓' }}</span>{% endif %}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threat Indicators</th>
                 </tr>
             </thead>
             <tbody id="vulnTableBody" class="bg-white divide-y divide-gray-200">
@@ -102,8 +117,8 @@
                         <!-- per-asset export icon -->
                         <a href="{{ url_for('export_asset_vulnerabilities_pdf', asset_id=vuln.asset_id) }}"
                            title="Export vulnerabilities for this asset (PDF)"
-                           class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 transition">
-                            📄
+                           class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-vc-blue-100 hover:bg-vc-blue-200 text-vc-blue-700 transition">
+                            <i class="fas fa-file-pdf text-xs"></i>
                         </a>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -151,9 +166,26 @@
                         {{ vuln.published_date }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                            {{ vuln.status }}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            {% if vuln.reported_botnets %}
+                                <i class="fas fa-robot text-red-600" title="Botnet detected"></i>
+                            {% endif %}
+                            {% if vuln.weaponized_exploit %}
+                                <i class="fas fa-burst text-orange-600" title="Weaponized exploit"></i>
+                            {% endif %}
+                            {% if vuln.reported_canaries %}
+                                <i class="fas fa-dove text-vc-blue-600" title="Canary alert"></i>
+                            {% endif %}
+                            {% if vuln.reported_ransomware %}
+                                <i class="fas fa-lock text-purple-600" title="Ransomware"></i>
+                            {% endif %}
+                            {% if vuln.reported_threat_actors %}
+                                <i class="fas fa-user-secret text-gray-700" title="Threat actor"></i>
+                            {% endif %}
+                            {% if not vuln.reported_botnets and not vuln.reported_ransomware and not vuln.reported_canaries and not vuln.weaponized_exploit and not vuln.reported_threat_actors %}
+                                <span class="text-gray-400 text-xs">—</span>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -198,13 +230,59 @@
         form.submit();
     }
 
+    // Export dropdown toggle
+    const exportDropdownBtn = document.getElementById('exportDropdownBtn');
+    const exportDropdown = document.getElementById('exportDropdown');
+
+    exportDropdownBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        exportDropdown.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!exportDropdown.classList.contains('hidden') && !exportDropdownBtn.contains(e.target)) {
+            exportDropdown.classList.add('hidden');
+        }
+    });
+
+    // Export PDF button
+    document.getElementById('exportPdfBtn').addEventListener('click', function() {
+        const form = document.getElementById('filterForm');
+        const params = new URLSearchParams(new FormData(form));
+        const exportUrl = "{{ url_for('export_vulnerabilities_pdf') }}" + '?' + params.toString();
+        window.location.href = exportUrl;
+        exportDropdown.classList.add('hidden');
+    });
+
+    // Export CSV button
+    document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        const form = document.getElementById('filterForm');
+        const params = new URLSearchParams(new FormData(form));
+        const exportUrl = "{{ url_for('export_vulnerabilities_csv') }}" + '?' + params.toString();
+        window.location.href = exportUrl;
+        exportDropdown.classList.add('hidden');
+    });
+
+    // Export JSON button
+    document.getElementById('exportJsonBtn').addEventListener('click', function() {
+        const form = document.getElementById('filterForm');
+        const params = new URLSearchParams(new FormData(form));
+        const exportUrl = "{{ url_for('export_vulnerabilities_json') }}" + '?' + params.toString();
+        window.location.href = exportUrl;
+        exportDropdown.classList.add('hidden');
+    });
+
     // Export selected asset button behavior
     document.getElementById('exportSelectedBtn').addEventListener('click', function() {
         const select = document.getElementById('assetFilter');
         const assetId = select.value;
         if (!assetId) {
-            // no asset selected -> export all
-            window.location.href = "{{ url_for('export_vulnerabilities_pdf') }}";
+            // no asset selected -> export all with current filters (PDF)
+            const form = document.getElementById('filterForm');
+            const params = new URLSearchParams(new FormData(form));
+            const exportUrl = "{{ url_for('export_vulnerabilities_pdf') }}" + '?' + params.toString();
+            window.location.href = exportUrl;
         } else {
             // export for selected asset
             const url = "{{ url_for('export_asset_vulnerabilities_pdf', asset_id=0) }}";

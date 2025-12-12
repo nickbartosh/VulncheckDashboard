@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="silverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8E8E8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#C0C0C0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A8A8A8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="shineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Shield outline (darker) -->
+  <path d="M 50 5 L 85 20 L 85 45 Q 85 75 50 95 Q 15 75 15 45 L 15 20 Z"
+        fill="#909090"
+        filter="url(#shadow)"/>
+
+  <!-- Main shield body -->
+  <path d="M 50 8 L 82 22 L 82 45 Q 82 73 50 92 Q 18 73 18 45 L 18 22 Z"
+        fill="url(#silverGradient)"/>
+
+  <!-- Shine effect -->
+  <path d="M 50 8 L 82 22 L 82 45 Q 82 73 50 92 Q 18 73 18 45 L 18 22 Z"
+        fill="url(#shineGradient)"/>
+
+  <!-- Inner shield detail -->
+  <path d="M 50 15 L 75 26 L 75 45 Q 75 68 50 85 Q 25 68 25 45 L 25 26 Z"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-width="1.5"
+        opacity="0.3"/>
+
+  <!-- Security checkmark -->
+  <path d="M 38 48 L 46 58 L 64 38"
+        fill="none"
+        stroke="#606060"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

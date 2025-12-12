@@ -1,8 +1,10 @@
 import os
 import io
+import csv
+import json
 import sqlite3
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, session, g
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, session, g, Response, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from reportlab.lib.pagesizes import letter
@@ -249,35 +251,69 @@ def create_vulns_pdf(vulnerabilities):
     elements.append(Paragraph("Vulnerabilities Report", styles['Title']))
     elements.append(Spacer(1, 12))
 
-    # Table header
-    data = [["CVE", "Asset", "Severity", "CVSS", "Exploit", "Status", "Published", "Description"]]
+    # Table header with threat intelligence fields
+    data = [[
+        "CVE",
+        "Published",
+        "EPSS",
+        "CVSS",
+        "Weaponized",
+        "Ransomware",
+        "Botnets",
+        "Threat Actors",
+        "Commercial"
+    ]]
 
     # Rows
     for v in vulnerabilities:
         cve = v.get('cve_id', '')
-        asset = v.get('asset_name', '') or str(v.get('asset_id', ''))
-        severity = v.get('severity', '')
-        cvss = f"{v.get('cvss_score', '')}"
-        exploit = "Yes" if int(v.get('exploit_available', 0) or 0) == 1 else "No"
-        status = v.get('status', '')
-        published = v.get('published_date', '') or ''
-        description = v.get('description', '') or ''
-        # Truncate description for table readability
-        if len(description) > 200:
-            description = description[:197] + "..."
-        data.append([cve, asset, severity, cvss, exploit, status, published, description])
 
-    # Create table
-    table = Table(data, colWidths=[80, 80, 55, 40, 50, 55, 60, 140])
+        # Format published date as Y-m-d
+        published_raw = v.get('published_date', '') or ''
+        published = published_raw
+        if published_raw:
+            try:
+                # Try to parse the date and format it as Y-m-d
+                date_obj = datetime.strptime(published_raw.split(' ')[0], '%Y-%m-%d')
+                app.logger.info(f"Parsed date object for CVE {cve}: {date_obj}")
+                published = date_obj.strftime('%Y-%m-%d')
+            except (ValueError, AttributeError):
+                # If parsing fails, use the raw value
+                published = published_raw
+
+        epss = f"{(v.get('epss_score', 0) * 100):.2f}%" if v.get('epss_score') else 'N/A'
+        cvss = f"{v.get('cvss_score', '')}"
+        weaponized = "Yes" if int(v.get('weaponized_exploit', 0) or 0) == 1 else "No"
+        ransomware = "Yes" if int(v.get('reported_ransomware', 0) or 0) == 1 else "No"
+        botnets = "Yes" if int(v.get('reported_botnets', 0) or 0) == 1 else "No"
+        threat_actors = "Yes" if int(v.get('reported_threat_actors', 0) or 0) == 1 else "No"
+        commercial = "Yes" if int(v.get('commercial_exploit', 0) or 0) == 1 else "No"
+
+        data.append([
+            cve,
+            published,
+            epss,
+            cvss,
+            weaponized,
+            ransomware,
+            botnets,
+            threat_actors,
+            commercial
+        ])
+
+    # Create table with adjusted column widths
+    table = Table(data, colWidths=[80, 60, 45, 40, 50, 55, 50, 60, 55])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),  # header background
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f172a')),  # VulnCheck blue header
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('ALIGN', (3, 1), (3, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('ALIGN', (2, 1), (-1, -1), 'CENTER'),  # Center align numeric/yes-no columns
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('INNERGRID', (0,0), (-1,-1), 0.25, colors.gray),
         ('BOX', (0,0), (-1,-1), 0.25, colors.gray),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f7fafc')]),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')]),
     ]))
 
     elements.append(table)
@@ -368,26 +404,86 @@ def dashboard():
 
     # Get vulnerabilities per asset grouped by severity
     cursor.execute("""
-        SELECT a.id, a.name, v.severity, COUNT(*) as count
+        SELECT a.id, a.name, a.criticality, v.severity, COUNT(*) as count
         FROM vulnerabilities v
         JOIN assets a ON v.asset_id = a.id
         WHERE a.user_id = ?
-        GROUP BY a.id, a.name, v.severity
+        GROUP BY a.id, a.name, a.criticality, v.severity
         ORDER BY a.name
     """, (current_user.id,))
     asset_vuln_rows = cursor.fetchall()
-    
-    # Transform into dict: {asset_id: {name: 'X', vulnerabilities: {severity: count}}}
+
+    # Transform into dict: {asset_id: {name: 'X', criticality: 'Y', vulnerabilities: {severity: count}}}
     asset_vulns = {}
     for row in asset_vuln_rows:
         asset_id = row['id']
         if asset_id not in asset_vulns:
-            asset_vulns[asset_id] = {'name': row['name'], 'vulnerabilities': {}}
+            asset_vulns[asset_id] = {'name': row['name'], 'criticality': row['criticality'], 'vulnerabilities': {}}
         severity = row['severity'] if row['severity'] is not None else 'Unknown'
         asset_vulns[asset_id]['vulnerabilities'][severity] = row['count']
     
-    # Convert to list and sort by name
-    assets_with_vulns = sorted(asset_vulns.values(), key=lambda x: x['name'])
+    # Aggregate exploit/actor/honeypot/canary counts per asset
+    cursor.execute("""
+        SELECT a.id,
+            SUM(CASE WHEN v.reported_botnets = 1 THEN 1 ELSE 0 END) as botnets,
+            SUM(CASE WHEN v.commercial_exploit = 1 THEN 1 ELSE 0 END) as commercial,
+            SUM(CASE WHEN v.weaponized_exploit = 1 THEN 1 ELSE 0 END) as weaponized,
+            SUM(CASE WHEN v.reported_canaries = 1 THEN 1 ELSE 0 END) as canaries,
+            SUM(CASE WHEN v.reported_threat_actors = 1 THEN 1 ELSE 0 END) as threat_actors,
+            SUM(CASE WHEN v.reported_ransomware = 1 THEN 1 ELSE 0 END) as ransomware
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE a.user_id = ?
+        GROUP BY a.id
+    """, (current_user.id,))
+    exploit_rows = cursor.fetchall()
+
+    for row in exploit_rows:
+        aid = row['id']
+        if aid not in asset_vulns:
+            # ensure asset exists in the map even if no severity groupings were present
+            cursor2 = conn.cursor()
+            cursor2.execute("SELECT name, criticality FROM assets WHERE id = ?", (aid,))
+            arow = cursor2.fetchone()
+            name = arow['name'] if arow else f"Asset {aid}"
+            criticality = arow['criticality'] if arow else 'Unknown'
+            asset_vulns[aid] = {'name': name, 'criticality': criticality, 'vulnerabilities': {}}
+        asset_vulns[aid]['exploit_counts'] = {
+            'botnets': row['botnets'] or 0,
+            'commercial': row['commercial'] or 0,
+            'weaponized': row['weaponized'] or 0,
+            'canaries': row['canaries'] or 0,
+            'threat_actors': row['threat_actors'] or 0,
+            'ransomware': row['ransomware'] or 0
+        }
+
+    # Fetch CVE details for each asset
+    for asset_id, asset_data in asset_vulns.items():
+        cursor.execute("""
+            SELECT v.cve_id, v.severity, v.cvss_score, v.exploit_available
+            FROM vulnerabilities v
+            WHERE v.asset_id = ?
+            ORDER BY
+                CASE v.severity
+                    WHEN 'CRITICAL' THEN 1
+                    WHEN 'HIGH' THEN 2
+                    WHEN 'MEDIUM' THEN 3
+                    WHEN 'LOW' THEN 4
+                    ELSE 5
+                END,
+                v.cvss_score DESC
+        """, (asset_id,))
+        asset_data['cves'] = [dict_from_row(row) for row in cursor.fetchall()]
+
+    # Convert to list and sort by threat intelligence (Ransomware > Botnets > Threat Actors)
+    def get_threat_score(asset):
+        exploit_counts = asset.get('exploit_counts', {})
+        # Weight: Ransomware=10000, Botnets=1000, Threat Actors=100
+        return (exploit_counts.get('ransomware', 0) * 10000 +
+                exploit_counts.get('botnets', 0) * 1000 +
+                exploit_counts.get('threat_actors', 0) * 100)
+
+    assets_with_vulns = sorted(asset_vulns.values(), key=get_threat_score, reverse=True)
     
     stats = {
         'total_assets': total_assets,
@@ -658,9 +754,9 @@ def vulnerabilities_view():
     app.logger.info(f"Vulnerabilities query: {query} with params {params}")
     cursor.execute(query, params)
     vulnerabilities = [dict_from_row(row) for row in cursor.fetchall()]
-    
-    return render_template('vulnerabilities.html', 
-                          vulnerabilities=vulnerabilities, 
+
+    return render_template('vulnerabilities.html',
+                          vulnerabilities=vulnerabilities,
                           assets=assets,
                           current_filters={
                               'asset_id': asset_id_filter,
@@ -675,8 +771,8 @@ def vulnerabilities_view():
 @login_required
 def cve_view(cve_id):
     """Detailed CVE view. Pulls info from VulnCheck and shows local impacted assets."""
-    # Fetch CVE info from VulnCheck
-    cve_info = g.vulncheck_api.get_vulnerability_info_nist(cve_id)
+    # Fetch CVE info from VulnCheck (using VulnCheck index instead of NIST)
+    cve_info = g.vulncheck_api.get_vulnerability_info_vulncheck(cve_id)
     if 'error' in cve_info:
         flash(f"Error retrieving CVE {cve_id}: {cve_info.get('error')}", 'error')
         return redirect(url_for('vulnerabilities_view'))
@@ -684,7 +780,9 @@ def cve_view(cve_id):
     cve_data_list = cve_info.get('data', [])
     cve_item = cve_data_list[0] if len(cve_data_list) > 0 else None
 
-    # Fetch exploit info
+    app.logger.info(f"CVE Info for {cve_id}: {cve_item}")
+
+    # Fetch exploit info to enrich the CVE data
     exploit_info = g.vulncheck_api.get_exploit_info(cve_id)
     exploit_data = exploit_info.get('data', []) if isinstance(exploit_info, dict) else []
 
@@ -719,16 +817,45 @@ def get_asset_vulnerabilities(asset_id):
 @app.route('/vulnerabilities/export')
 @login_required
 def export_vulnerabilities_pdf():
-    """Export all vulnerabilities for current user to PDF."""
+    """Export vulnerabilities for current user to PDF, respecting current filters."""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
+
+    # Get filter parameters (same as vulnerabilities_view)
+    asset_id_filter = request.args.get('asset_id', '')
+    severity_filter = request.args.get('severity', '')
+    exploit_filter = request.args.get('exploit_available', '')
+    status_filter = request.args.get('status', '')
+    sort_by = request.args.get('sort_by', 'cvss_score')
+    sort_order = request.args.get('sort_order', 'DESC')
+
+    # Build WHERE clause
+    where_parts = ["a.user_id = ?"]
+    params = [current_user.id]
+
+    if asset_id_filter:
+        where_parts.append("v.asset_id = ?")
+        params.append(asset_id_filter)
+    if severity_filter:
+        where_parts.append("v.severity = ?")
+        params.append(severity_filter)
+    if exploit_filter:
+        where_parts.append("v.exploit_available = ?")
+        params.append(exploit_filter)
+    if status_filter:
+        where_parts.append("v.status = ?")
+        params.append(status_filter)
+
+    where_clause = " AND ".join(where_parts)
+
+    query = f"""
         SELECT v.*, a.name as asset_name
         FROM vulnerabilities v
         JOIN assets a ON v.asset_id = a.id
-        WHERE a.user_id = ?
-        ORDER BY v.cvss_score DESC, v.last_updated DESC
-    """, (current_user.id,))
+        WHERE {where_clause}
+        ORDER BY v.{sort_by} {sort_order}
+    """
+    cursor.execute(query, params)
     vulnerabilities = [dict_from_row(row) for row in cursor.fetchall()]
 
     pdf_bytes = create_vulns_pdf(vulnerabilities)
@@ -736,6 +863,119 @@ def export_vulnerabilities_pdf():
                      mimetype='application/pdf',
                      as_attachment=True,
                      download_name='vulnerabilities_report.pdf')
+
+
+@app.route('/vulnerabilities/export/csv')
+@login_required
+def export_vulnerabilities_csv():
+    """Export vulnerabilities for current user to CSV, respecting current filters."""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get filter parameters (same as vulnerabilities_view)
+    asset_id_filter = request.args.get('asset_id', '')
+    severity_filter = request.args.get('severity', '')
+    exploit_filter = request.args.get('exploit_available', '')
+    status_filter = request.args.get('status', '')
+    sort_by = request.args.get('sort_by', 'cvss_score')
+    sort_order = request.args.get('sort_order', 'DESC')
+
+    # Build WHERE clause
+    where_parts = ["a.user_id = ?"]
+    params = [current_user.id]
+
+    if asset_id_filter:
+        where_parts.append("v.asset_id = ?")
+        params.append(asset_id_filter)
+    if severity_filter:
+        where_parts.append("v.severity = ?")
+        params.append(severity_filter)
+    if exploit_filter:
+        where_parts.append("v.exploit_available = ?")
+        params.append(exploit_filter)
+    if status_filter:
+        where_parts.append("v.status = ?")
+        params.append(status_filter)
+
+    where_clause = " AND ".join(where_parts)
+
+    query = f"""
+        SELECT v.*, a.name as asset_name, a.cpe_string as asset_cpe_string
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE {where_clause}
+        ORDER BY v.{sort_by} {sort_order}
+    """
+    cursor.execute(query, params)
+    vulnerabilities = [dict_from_row(row) for row in cursor.fetchall()]
+
+    # Create CSV in memory
+    output = io.StringIO()
+    if vulnerabilities:
+        # Get all column names from the first vulnerability
+        fieldnames = list(vulnerabilities[0].keys())
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(vulnerabilities)
+
+    # Create response
+    csv_data = output.getvalue()
+    response = make_response(csv_data)
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = 'attachment; filename=vulnerabilities_report.csv'
+    return response
+
+
+@app.route('/vulnerabilities/export/json')
+@login_required
+def export_vulnerabilities_json():
+    """Export vulnerabilities for current user to JSON, respecting current filters."""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get filter parameters (same as vulnerabilities_view)
+    asset_id_filter = request.args.get('asset_id', '')
+    severity_filter = request.args.get('severity', '')
+    exploit_filter = request.args.get('exploit_available', '')
+    status_filter = request.args.get('status', '')
+    sort_by = request.args.get('sort_by', 'cvss_score')
+    sort_order = request.args.get('sort_order', 'DESC')
+
+    # Build WHERE clause
+    where_parts = ["a.user_id = ?"]
+    params = [current_user.id]
+
+    if asset_id_filter:
+        where_parts.append("v.asset_id = ?")
+        params.append(asset_id_filter)
+    if severity_filter:
+        where_parts.append("v.severity = ?")
+        params.append(severity_filter)
+    if exploit_filter:
+        where_parts.append("v.exploit_available = ?")
+        params.append(exploit_filter)
+    if status_filter:
+        where_parts.append("v.status = ?")
+        params.append(status_filter)
+
+    where_clause = " AND ".join(where_parts)
+
+    query = f"""
+        SELECT v.*, a.name as asset_name, a.cpe_string as asset_cpe_string
+        FROM vulnerabilities v
+        JOIN assets a ON v.asset_id = a.id
+        WHERE {where_clause}
+        ORDER BY v.{sort_by} {sort_order}
+    """
+    cursor.execute(query, params)
+    vulnerabilities = [dict_from_row(row) for row in cursor.fetchall()]
+
+    # Create JSON response
+    json_data = json.dumps(vulnerabilities, indent=2)
+    response = make_response(json_data)
+    response.headers['Content-Type'] = 'application/json'
+    response.headers['Content-Disposition'] = 'attachment; filename=vulnerabilities_report.json'
+    return response
 
 
 @app.route('/vulnerabilities/export/<int:asset_id>')
