@@ -9,7 +9,7 @@
         <h1 class="text-3xl font-bold text-vc-blue-950">{{ cve_id }}</h1>
         {% if cve_item %}
         <p class="text-sm text-vc-slate-600 mt-2">
-            <i class="fas fa-calendar-alt mr-2"></i>Published: {{ cve_item.get('published_date', 'N/A') }}
+            <i class="fas fa-calendar-alt mr-2"></i>Published: {{ cve_item.get('published', 'N/A') }}
         </p>
     </div>
 
@@ -28,7 +28,7 @@
                     <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
                     <h3 class="text-sm font-semibold text-vc-slate-600 uppercase">Severity</h3>
                 </div>
-                {% set severity = cve_item.get('impact', {}).get('metricV40', {}).get('baseSeverity', 'Unknown') %}
+                {% set severity = cvssData.get('cvssData', {}).get('baseSeverity', 'Unknown').upper() %}
                 {% if severity == 'CRITICAL' %}
                 <span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">Critical</span>
                 {% elif severity == 'HIGH' %}
@@ -46,14 +46,14 @@
                     <i class="fas fa-chart-line text-vc-blue-600 mr-2"></i>
                     <h3 class="text-sm font-semibold text-vc-slate-600 uppercase">CVSS Score</h3>
                 </div>
-                <p class="text-2xl font-bold text-vc-blue-950">{{ cve_item.get('impact', {}).get('metricV40', {}).get('baseScore', 'N/A') }}</p>
+                <p class="text-2xl font-bold text-vc-blue-950">{{ cvssData.get('cvssData', {}).get('baseScore', 'N/A') }}</p>
             </div>
             <div class="bg-vc-slate-50 rounded-lg p-4 border border-vc-slate-200">
                 <div class="flex items-center mb-2">
                     <i class="fas fa-clock text-vc-slate-600 mr-2"></i>
                     <h3 class="text-sm font-semibold text-vc-slate-600 uppercase">Last Updated</h3>
                 </div>
-                <p class="text-sm font-medium text-vc-slate-700">{{ cve_item.get('last_modified', cve_item.get('last_updated', 'N/A')) }}</p>
+                <p class="text-sm font-medium text-vc-slate-700">{{ cve_item.get('lastModified', 'N/A') }}</p>
             </div>
         </div>
 

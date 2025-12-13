@@ -782,6 +782,14 @@ def cve_view(cve_id):
 
     app.logger.info(f"CVE Info for {cve_id}: {cve_item}")
 
+    # Pull CVSS Data if it exists
+    cvssData = []
+    if len(cve_data_list[0]['metrics'].get('cvssMetricV40', {})):
+        cvssData = cve_data_list[0]['metrics'].get('cvssMetricV40', {})[0]
+    elif len(cve_data_list[0]['metrics'].get('cvssMetricV31', {})):
+        cvssData = cve_data_list[0]['metrics'].get('cvssMetricV31', {})[0]
+
+    app.logger.info(f"CVSS Data for {cve_id}: {cvssData}")
     # Fetch exploit info to enrich the CVE data
     exploit_info = g.vulncheck_api.get_exploit_info(cve_id)
     exploit_data = exploit_info.get('data', []) if isinstance(exploit_info, dict) else []
@@ -797,7 +805,7 @@ def cve_view(cve_id):
     """, (cve_id, current_user.id))
     impacted = [dict_from_row(row) for row in cursor.fetchall()]
 
-    return render_template('cve.html', cve_id=cve_id, cve_item=cve_item, exploit_data=exploit_data, impacted=impacted)
+    return render_template('cve.html', cve_id=cve_id, cve_item=cve_item, exploit_data=exploit_data, impacted=impacted, cvssData=cvssData)
 
 @app.route('/api/vulnerabilities/<int:asset_id>')
 @login_required
