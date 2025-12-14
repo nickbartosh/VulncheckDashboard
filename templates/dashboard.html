@@ -217,28 +217,28 @@
                                                 {% endif %}
                                             </td>
                                             <td class="px-3 py-2 text-center text-xs">
-                                                {% if cve.ransomware %}
+                                                {% if cve.reported_ransomware %}
                                                     <i class="fas fa-check text-yellow-600"></i>
                                                 {% else %}
                                                     <span class="text-gray-300">-</span>
                                                 {% endif %}
                                             </td>
                                             <td class="px-3 py-2 text-center text-xs">
-                                                {% if cve.botnet %}
+                                                {% if cve.reported_botnets %}
                                                     <i class="fas fa-check text-red-600"></i>
                                                 {% else %}
                                                     <span class="text-gray-300">-</span>
                                                 {% endif %}
                                             </td>
                                             <td class="px-3 py-2 text-center text-xs">
-                                                {% if cve.threat_actors %}
+                                                {% if cve.reported_threat_actors %}
                                                     <i class="fas fa-check text-pink-600"></i>
                                                 {% else %}
                                                     <span class="text-gray-300">-</span>
                                                 {% endif %}
                                             </td>
                                             <td class="px-3 py-2 text-center text-xs">
-                                                {% if cve.weaponized %}
+                                                {% if cve.weaponized_exploit %}
                                                     <i class="fas fa-check text-orange-600"></i>
                                                 {% else %}
                                                     <span class="text-gray-300">-</span>

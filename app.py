@@ -173,10 +173,10 @@ def sync_vulnerabilities_for_asset(asset_id):
     
     synced_count = 0
     data = vuln_data.get('data', [])
-    app.logger.info(f"Vuln data {data}")
 
     # Process each vulnerability
-    for cve_id in data[:100]:  # Limit to 100 vulnerabilities
+    app.logger.info(f"Processing vulnerabilities for asset ID: {asset_id}")
+    for cve_id in data[:300]:  # Limit to 100 vulnerabilities
 
         # Check if exploit is available
         # cve_info = g.vulncheck_api.get_vulnerability_info_nist(cve_id)
@@ -194,21 +194,27 @@ def sync_vulnerabilities_for_asset(asset_id):
         elif len(vc_cve_data[0]['metrics'].get('cvssMetricV31', {})):
             cvssData = vc_cve_data[0]['metrics'].get('cvssMetricV31', {})[0]
 
-
         exploit_available = 1 if len(exploit_info.get('data', [])) > 0 else 0
-        app.logger.info(f"Exploit data for {cve_id}: {vc_cve_data[0]['metrics'].get('cvssMetricV31', {})}")
         cvss_severity = cvssData.get('cvssData', {}).get('baseSeverity') if cvssData else 'Unknown'
         cvss_basescore = cvssData.get('cvssData', {}).get('baseScore') if cvssData else 0.0
-        epss_score = vc_exploit_data[0]['epss'].get('epss_score', 0.0) if exploit_available else 0.0
-        public_exploit = vc_exploit_data[0].get('public_exploit_found') if exploit_available else 0
-        commercial_exploit = vc_exploit_data[0].get('commercial_exploit_found') if exploit_available else 0
-        weaponized_exploit = vc_exploit_data[0].get('weaponized_exploit_found') if exploit_available else 0
-        reported_honeypots = vc_exploit_data[0].get('reported_exploited_by_honeypot_service') if exploit_available else 0
-        reported_canaries = vc_exploit_data[0].get('reported_exploited_by_vulncheck_canaries') if exploit_available else 0
-        reported_botnets = vc_exploit_data[0].get('reported_exploited_by_botnets') if exploit_available else 0
-        reported_threat_actors = vc_exploit_data[0].get('reported_exploited_by_threat_actors') if exploit_available else 0
-        reported_ransomware = vc_exploit_data[0].get('reported_exploited_by_ransomware') if exploit_available else 0
 
+        # Additional exploit/threat intel fields
+        epss_score = 0.0
+        public_exploit, commercial_exploit, weaponized_exploit, reported_botnets = 0, 0, 0, 0
+        reported_honeypots, reported_canaries, reported_threat_actors, reported_ransomware = 0, 0, 0, 0
+
+        if len(vc_exploit_data) != 0:
+            
+            epss_score = vc_exploit_data[0]['epss'].get('epss_score', 0.0) if vc_exploit_data[0]['epss'] else 0.0
+            public_exploit = vc_exploit_data[0].get('public_exploit_found', 0)
+            commercial_exploit = vc_exploit_data[0].get('commercial_exploit_found', 0)
+            weaponized_exploit = vc_exploit_data[0].get('weaponized_exploit_found', 0)
+            reported_honeypots = vc_exploit_data[0].get('reported_exploited_by_honeypot_service', 0)
+            reported_canaries = vc_exploit_data[0].get('reported_exploited_by_vulncheck_canaries', 0)
+            reported_botnets = vc_exploit_data[0].get('reported_exploited_by_botnets', 0)
+            reported_threat_actors = vc_exploit_data[0].get('reported_exploited_by_threat_actors', 0)
+            reported_ransomware = vc_exploit_data[0].get('reported_exploited_by_ransomware', 0)
+            app.logger.info(f"Has botnets -- {cve_id}: {reported_botnets}")
         # Insert or update vulnerability
         cursor.execute("""
             INSERT OR REPLACE INTO vulnerabilities 
@@ -404,7 +410,7 @@ def dashboard():
 
     # Get vulnerabilities per asset grouped by severity
     cursor.execute("""
-        SELECT a.id, a.name, a.criticality, v.severity, COUNT(*) as count
+        SELECT a.id, a.name, a.cpe_string, a.criticality, v.severity, COUNT(*) as count
         FROM vulnerabilities v
         JOIN assets a ON v.asset_id = a.id
         WHERE a.user_id = ?
@@ -460,7 +466,7 @@ def dashboard():
     # Fetch CVE details for each asset
     for asset_id, asset_data in asset_vulns.items():
         cursor.execute("""
-            SELECT v.cve_id, v.severity, v.cvss_score, v.exploit_available
+            SELECT *
             FROM vulnerabilities v
             WHERE v.asset_id = ?
             ORDER BY
