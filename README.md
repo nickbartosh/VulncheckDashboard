@@ -13,8 +13,9 @@ vulnerabilities based on provided CPEs
 3. python3 -m venv venv
 4. source venv/bin/activate
 5. pip install -r requirements.txt
-6. python3 app.py
-7. Open your favorite Browser < http://127.0.0.1:5000/ >
+6. update .env file with your API key and preferred secret key
+7. python3 app.py
+8. Open your favorite Browser < http://127.0.0.1:5000/ >
 
 ## Usage 
 - browse to Inventory
