@@ -62,6 +62,9 @@ Based on the available intelligence provided by the VulnCheck APIs, the followin
   servers running this specific version. The CVE-2025-59287 allows an unauthorized user to execute
   code over the the network. The October 23, 2025 OOB patch should be applied immediately.
   Ports 8530 and 8531 should be blocked at the host firewall until the patch is deployed.
+- Finally the Smart HMI system should be reviewed. This vulnerability, CVE-2024-8752, allows directory
+  traversal on windows devices running this software. There is currently no fix for this CVE. ACLs
+  should be reviewed to limit impact and the PURDUE model should be followed where possible.
 
 
 ## Assumptions
