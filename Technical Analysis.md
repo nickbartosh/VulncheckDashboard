@@ -34,20 +34,24 @@ will follow the same format.
 - 2 vulnerabilities targeted by Ransomware
 - 2 vulnerabilities targeted by Botnets
 - 4 Threat Actors
+- Only 3 CVEs appear with an EPSS score of 50% or greater
 
 ** Windows Server - cpe:2.3:o:microsoft:windows_server_2025:10.0.26100.4946:*:*:*:*:*:x64:*
 ** Vulnerability Summary
 - 1 vulnerability targeted by Ransomware
 - 5 vulnerabilities targeted by threat actors
+- Only 1 CVE appears with an EPSS score of 50% or greater
 
 ** WebIQ Smart HMI - cpe:2.3:a:smart-hmi:webiq:2.15.9:*:*:*:*:*:*:*
 ** Vulnerability Summary
-- No current ransomware, botnets or threat actors targeting this device
+- 1 vulnerability targeted by a threat actor
+- 1 CVE appears with an EPSS score of 50% or greater
 
 
 ** Ivanti Traffic Management - cpe:2.3:a:ivanti:virtual_traffic_management:22.7:r1:*:*:*:*:*:*
 ** Vulnerability Summary
 - 1 vulnerability targeted by a threat actor
+- 1 CVE appears with an EPSS score of 50% or greater
 
 ## Recommendations
 Based on the available intelligence provided by the VulnCheck APIs, the following actions are advised
