@@ -186,6 +186,10 @@
                                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Severity</th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">CVSS</th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Exploit</th>
+                                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Ransomware</th>
+                                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Botnet</th>
+                                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Threat Actors</th>
+                                        <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Weaponized</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 bg-white">
@@ -212,11 +216,39 @@
                                                     <span class="text-gray-500">No</span>
                                                 {% endif %}
                                             </td>
+                                            <td class="px-3 py-2 text-center text-xs">
+                                                {% if cve.ransomware %}
+                                                    <i class="fas fa-check text-yellow-600"></i>
+                                                {% else %}
+                                                    <span class="text-gray-300">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-center text-xs">
+                                                {% if cve.botnet %}
+                                                    <i class="fas fa-check text-red-600"></i>
+                                                {% else %}
+                                                    <span class="text-gray-300">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-center text-xs">
+                                                {% if cve.threat_actors %}
+                                                    <i class="fas fa-check text-pink-600"></i>
+                                                {% else %}
+                                                    <span class="text-gray-300">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-center text-xs">
+                                                {% if cve.weaponized %}
+                                                    <i class="fas fa-check text-orange-600"></i>
+                                                {% else %}
+                                                    <span class="text-gray-300">-</span>
+                                                {% endif %}
+                                            </td>
                                         </tr>
                                         {% endfor %}
                                     {% else %}
                                         <tr>
-                                            <td colspan="4" class="px-3 py-3 text-xs text-gray-500 text-center">
+                                            <td colspan="8" class="px-3 py-3 text-xs text-gray-500 text-center">
                                                 No CVE data available
                                             </td>
                                         </tr>

@@ -496,6 +496,8 @@ def dashboard():
         'vulns_by_severity': vulns_by_severity,
         'assets_with_vulns': assets_with_vulns
     }
+
+    app.logger.info(f"Assets with vulns: {stats['assets_with_vulns']}")
     
     return render_template('dashboard.html', stats=stats)
 

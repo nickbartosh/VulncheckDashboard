@@ -19,7 +19,17 @@
             <i class="fas fa-file-alt text-vc-blue-600 text-lg mr-2"></i>
             <h2 class="text-xl font-bold text-vc-blue-950">Summary</h2>
         </div>
-        <p class="text-vc-slate-700 leading-relaxed">{{ cve_item.get('cve', {}).get('description', {}).get('description_data', [{}])[0].get('value', '') }}</p>
+        <div class="flex items-center mb-4">
+             <p class="text-vc-slate-700 leading-relaxed">{{ cve_item.get('descriptions', [{}])[0].get('value', '') }}</p>
+        </div>
+        <div class="flex items-center mb-4 mt-10">
+            <i class="fas fa-file-alt text-vc-blue-600 text-lg mr-2"></i>
+            <h2 class="text-xl font-bold text-vc-blue-950">Recommendations</h2>
+        </div>
+        <div class="flex items-center mb-4">
+             <p class="text-vc-slate-700 leading-relaxed">{{ cve_item.get('cisaRequiredAction','') }}</p>
+        </div>
+        
 
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -57,20 +67,67 @@
             </div>
         </div>
 
-        <!-- References -->
-        <div class="mt-6 pt-6 border-t border-vc-slate-200">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-link text-vc-blue-600 mr-2"></i>
-                <h3 class="font-semibold text-vc-blue-950">References</h3>
+    </div>
+
+    <!-- References Card (Collapsible) -->
+    <div class="mt-6 bg-white rounded-lg shadow-md border border-vc-slate-200 overflow-hidden">
+        <!-- Card Header (Toggle Button) -->
+        <button id="references-toggle" class="w-full flex items-center justify-between bg-white hover:bg-vc-slate-50 transition p-6 text-left">
+            <div class="flex items-center">
+                <i class="fas fa-link text-vc-blue-600 text-lg mr-2"></i>
+                <h2 class="text-xl font-bold text-vc-blue-950">References</h2>
             </div>
-            <ul class="space-y-2">
-                {% for ref in cve_item.get('cve', {}).get('references', {}).get('reference_data', []) %}
-                <li class="flex items-start">
-                    <i class="fas fa-external-link-alt text-vc-blue-500 text-xs mt-1 mr-2"></i>
-                    <a href="{{ ref['url'] }}" target="_blank" rel="noopener" class="text-sm text-vc-blue-600 hover:text-vc-blue-700 hover:underline break-all">{{ ref['url'] }}</a>
-                </li>
-                {% endfor %}
-            </ul>
+            <div class="flex items-center gap-4">
+                {% if cve_item.get('references', [])|length > 0 %}
+                <span class="text-sm font-semibold text-vc-blue-900 bg-vc-blue-50 px-3 py-1 rounded">
+                    {{ cve_item.get('references', [])|length }} found
+                </span>
+                {% endif %}
+                <i class="fas fa-chevron-down text-vc-slate-600 transform transition-transform duration-300" id="references-chevron"></i>
+            </div>
+        </button>
+
+        <!-- Card Content (Collapsible) -->
+        <div id="references-content" class="p-6 border-t border-vc-slate-200">
+            {% if cve_item.get('references', [])|length > 0 %}
+                <div class="space-y-3">
+                    {% for ref in cve_item.get('references', []) %}
+                    <div class="bg-vc-slate-50 rounded-lg p-4 border border-vc-slate-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-external-link-alt text-vc-blue-600 mt-1 mr-3"></i>
+                            <div class="flex-1">
+                                <a href="{{ ref['url'] }}" target="_blank" rel="noopener" class="text-sm text-vc-blue-600 hover:text-vc-blue-700 hover:underline break-all font-medium">
+                                    {{ ref['url'] }}
+                                </a>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    {% if ref.get('name') %}
+                                    <span class="text-xs text-vc-slate-600 bg-white px-2 py-1 rounded border border-vc-slate-200">
+                                        <i class="fas fa-tag mr-1"></i>{{ ref['name'] }}
+                                    </span>
+                                    {% endif %}
+                                    {% if ref.get('refsource') %}
+                                    <span class="text-xs text-vc-slate-600 bg-white px-2 py-1 rounded border border-vc-slate-200">
+                                        <i class="fas fa-database mr-1"></i>{{ ref['refsource'] }}
+                                    </span>
+                                    {% endif %}
+                                    {% if ref.get('status') %}
+                                    <span class="text-xs text-vc-slate-600 bg-white px-2 py-1 rounded border border-vc-slate-200">
+                                        <i class="fas fa-info-circle mr-1"></i>{{ ref['status'] }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="bg-vc-slate-50 border border-vc-slate-200 rounded-lg p-4">
+                    <p class="text-sm text-vc-slate-600 text-center">
+                        <i class="fas fa-info-circle mr-2"></i>No references available.
+                    </p>
+                </div>
+            {% endif %}
         </div>
     </div>
 
@@ -142,19 +199,37 @@
     <!-- Collapsible Toggle Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const toggleBtn = document.getElementById('exploit-toggle');
-            const content = document.getElementById('exploit-content');
-            const chevron = document.getElementById('exploit-chevron');
-            let isOpen = true;
+            // References Card Toggle
+            const referencesToggleBtn = document.getElementById('references-toggle');
+            const referencesContent = document.getElementById('references-content');
+            const referencesChevron = document.getElementById('references-chevron');
+            let referencesIsOpen = true;
 
-            toggleBtn.addEventListener('click', function() {
-                isOpen = !isOpen;
-                if (isOpen) {
-                    content.classList.remove('hidden');
-                    chevron.classList.remove('rotate-180');
+            referencesToggleBtn.addEventListener('click', function() {
+                referencesIsOpen = !referencesIsOpen;
+                if (referencesIsOpen) {
+                    referencesContent.classList.remove('hidden');
+                    referencesChevron.classList.remove('rotate-180');
                 } else {
-                    content.classList.add('hidden');
-                    chevron.classList.add('rotate-180');
+                    referencesContent.classList.add('hidden');
+                    referencesChevron.classList.add('rotate-180');
+                }
+            });
+
+            // Exploit Information Card Toggle
+            const exploitToggleBtn = document.getElementById('exploit-toggle');
+            const exploitContent = document.getElementById('exploit-content');
+            const exploitChevron = document.getElementById('exploit-chevron');
+            let exploitIsOpen = true;
+
+            exploitToggleBtn.addEventListener('click', function() {
+                exploitIsOpen = !exploitIsOpen;
+                if (exploitIsOpen) {
+                    exploitContent.classList.remove('hidden');
+                    exploitChevron.classList.remove('rotate-180');
+                } else {
+                    exploitContent.classList.add('hidden');
+                    exploitChevron.classList.add('rotate-180');
                 }
             });
         });
