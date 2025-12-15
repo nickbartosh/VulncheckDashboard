@@ -21,7 +21,7 @@ endpoints. Example enrichment datapoints included: ransomeware, botnets, Vulnche
 The enriched data was then stored in the vulnerabilities table for later analysis and review.
 
 ** Prioritization - CVEs and their associated assets were risk prioritized based on 
-The Evidence Based Vulnerability Prioritzation pyramid. CVEs exhibiting documented exploits with ransomware
+The Evidence Based Vulnerability Prioritzation pyramid as well as EPSS. CVEs exhibiting documented exploits with ransomware
 ranked the highest followed by botnets, threat actors, undogcumented KEV etc... 
 
 A dashboard page was setup to review top vulnerabilities ordered by exploitability as well as the associated
@@ -34,27 +34,41 @@ will follow the same format.
 - 2 vulnerabilities targeted by Ransomware
 - 2 vulnerabilities targeted by Botnets
 - 4 Threat Actors
+- Only 3 CVEs appear with an EPSS score of 50% or greater
 
 ** Windows Server - cpe:2.3:o:microsoft:windows_server_2025:10.0.26100.4946:*:*:*:*:*:x64:*
 ** Vulnerability Summary
 - 1 vulnerability targeted by Ransomware
 - 5 vulnerabilities targeted by threat actors
+- Only 1 CVE appears with an EPSS score of 50% or greater
 
 ** WebIQ Smart HMI - cpe:2.3:a:smart-hmi:webiq:2.15.9:*:*:*:*:*:*:*
 ** Vulnerability Summary
-- No current ransomware, botnets or threat actors targeting this device
+- 1 vulnerability targeted by a threat actor
+- 1 CVE appears with an EPSS score of 50% or greater
 
 
 ** Ivanti Traffic Management - cpe:2.3:a:ivanti:virtual_traffic_management:22.7:r1:*:*:*:*:*:*
 ** Vulnerability Summary
 - 1 vulnerability targeted by a threat actor
+- 1 CVE appears with an EPSS score of 50% or greater
 
 ## Recommendations
 Based on the available intelligence provided by the VulnCheck APIs, the following actions are advised
 - Focus remediation efforts on the firewall 1st with an emphasis on CVE-2024-0012, CVE-2025-0108 and
   CVE-2024-9474. Each CVE has an EPSS score of .94 (extremely likely exploit in the next 30 days) 
-  and is actively being targeted by Ransomware, Botnets and Threat Actors. 
-- 
+  and is actively being targeted by Ransomware, Botnets and Threat Actors. Network teams should
+  review access to the management interface to ensure it is properly secured.
+- The Ivanti Gateway, with CVE-2024-7593 should then be the next focus. This device is also likely
+  internet facing and should also be viewed as a priority. In this instance too the internal
+  management interface should be reviewed to ensure it is properly secured.
+- The windows server should then be reviewed. It is likely that there are several to many windows
+  servers running this specific version. The CVE-2025-59287 allows an unauthorized user to execute
+  code over the the network. The October 23, 2025 OOB patch should be applied immediately.
+  Ports 8530 and 8531 should be blocked at the host firewall until the patch is deployed.
+- Finally the Smart HMI system should be reviewed. This vulnerability, CVE-2024-8752, allows directory
+  traversal on windows devices running this software. There is currently no fix for this CVE. ACLs
+  should be reviewed to limit impact and the PURDUE model should be followed where possible.
 
 
 ## Assumptions
